@@ -4,7 +4,6 @@ import pdfToText from "react-pdftotext";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:3001";
 
-// Split by words, with overlap, safe for Gemini embeddings
 const chunkTextByParagraph = (text, chunkSize = 500, overlap = 50) => {
   const words = text.split(/\s+/);
   if (words.length <= chunkSize) return [text];
@@ -15,7 +14,6 @@ const chunkTextByParagraph = (text, chunkSize = 500, overlap = 50) => {
   }
   return chunks;
 };
-
 
 export default function Home() {
   const [messages, setMessages] = useState([]);
@@ -56,11 +54,10 @@ export default function Home() {
     }
   }, [uploadedFileName]);
 
-  // File input change
   const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      setSelectedFile(files);
       setUploadStatus("");
       setUploadProgress(0);
     }
@@ -68,64 +65,57 @@ export default function Home() {
 
   // Upload + parse file
   const handleFileUpload = async () => {
-    if (!selectedFile) {
-      setUploadStatus("Please select a file");
+    if (!selectedFile || selectedFile.length === 0) {
+      setUploadStatus("Please select file(s)");
       return;
     }
-    // const pdfjsLib = pdfjsLibRef.current;
+    for (const file of selectedFile) {
+      const fileName = file.name.replace(/\s+/g, "_");
+      setUploadStatus(`parsing ${fileName}...`);
+      let textContent = "";
 
-    setUploadStatus("starting upload...");
-    setUploadProgress(0);
-    const fileName = selectedFile.name.replace(/\s+/g, "_");
-
-try {
-  setUploadStatus('parsing file...')
-  let textContent=''
-
-  if(selectedFile.type==='application/pdf'){
-    textContent=await pdfToText(selectedFile)
-  }else{
-    const fileBuffer=await selectedFile.arrayBuffer()
-    textContent=new TextDecoder().decode(fileBuffer)
-  }
-  setUploadStatus('chunking file...')
-  const chunks=chunkTextByParagraph(textContent,500,50)
-  const totalChunks=chunks.length
-  const batchSize=5
-      if (totalChunks === 0) {
-        throw new Error("Could not extract any text from the file.");
+      if (file.type === "application/pdf") {
+        textContent = await pdfToText(file);
+      } else {
+        const fileBuffer = await file.arrayBuffer();
+        textContent = new TextDecoder().decode(fileBuffer);
       }
 
-      for(let i=0;i<totalChunks;i+=batchSize){
-        const batch=chunks.slice(i,i+batchSize)
-    const res=await fetch(`${API_BASE}/api/process-batch`,{
-      method:"POST",
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        fileName,
-        chunks:batch,
-        startChunkNumber:i
-      })
-    })
+      const chunks = chunkTextByParagraph(textContent);
+      const totalChunks = chunks.length;
+      const batchSize = 10;
 
-    if(!res.ok) throw new Error('failed to process batch')
+      for (let i = 0; i < totalChunks; i += batchSize) {
+        const batch = chunks.slice(i, i + batchSize);
+        const res = await fetch(`${API_BASE}/api/process-batch`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileName,
+            chunks: batch,
+            startChunkNumber: i,
+          }),
+        });
+
+        if (!res.ok) throw new Error(`Failed to process ${fileName}`);
         const progress = Math.min(
           100,
           Math.round(((i + batchSize) / totalChunks) * 100)
         );
         setUploadProgress(progress);
-        setUploadStatus(`Processing... ${progress}%`);
+        setUploadStatus(`${fileName}: ${progress}%`);
       }
-        setUploadStatus(`✅ File "${fileName}" processed successfully!`);
+
+      setUploadStatus(`✅ File "${fileName}" processed successfully!`);
       setUploadedFileName(fileName);
       setUploadedFiles((prev) => Array.from(new Set([fileName, ...prev])));
-} catch (error) {
-    setUploadStatus(`❌ Error: ${error.message || "Failed to process file."}`);
-}finally {
-      setSelectedFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     }
+
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
+
+  setSelectedFile;
 
   // Ask a question
   const handleSubmit = async (e) => {
@@ -194,6 +184,7 @@ try {
               ref={fileInputRef}
               onChange={handleFileChange}
               accept=".txt,.pdf"
+              multiple
               className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-cyan-600 file:text-white hover:file:bg-cyan-700 transition-colors"
             />
             <button
