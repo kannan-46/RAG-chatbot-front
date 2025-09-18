@@ -4,7 +4,7 @@ import pdfToText from "react-pdftotext";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:3001";
 
-const chunkTextByParagraph = (text, chunkSize = 500, overlap = 50) => {
+const chunkText = (text, chunkSize = 1000, overlap = 50) => {
   const words = text.split(/\s+/);
   if (words.length <= chunkSize) return [text];
 
@@ -81,9 +81,9 @@ export default function Home() {
         textContent = new TextDecoder().decode(fileBuffer);
       }
 
-      const chunks = chunkTextByParagraph(textContent);
+      const chunks = chunkText(textContent);
       const totalChunks = chunks.length;
-      const batchSize = 10;
+      const batchSize = 15
 
       for (let i = 0; i < totalChunks; i += batchSize) {
         const batch = chunks.slice(i, i + batchSize);
