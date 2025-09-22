@@ -1,6 +1,25 @@
 "use client";
+
 import { useState, useRef, useEffect } from "react";
 import pdfToText from "react-pdftotext";
+import {
+  Box,
+  Button,
+  Container,
+  Typography,
+  Paper,
+  TextField,
+  Select,
+  MenuItem,
+  LinearProgress,
+  List,
+  ListItem,
+  ListItemText,
+  Divider,
+  Stack,
+} from "@mui/material";
+import icon from "@/public/icon.png";
+import Image from "next/image";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:3001";
 
@@ -55,7 +74,7 @@ export default function Home() {
   }, [uploadedFileName]);
 
   const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
+    const files = e.target.files ? Array.from(e.target.files) : [];
     if (files.length > 0) {
       setSelectedFile(files);
       setUploadStatus("");
@@ -71,7 +90,7 @@ export default function Home() {
     }
     for (const file of selectedFile) {
       const fileName = file.name.replace(/\s+/g, "_");
-      setUploadStatus(`parsing ${fileName}...`);
+      setUploadStatus(`Parsing ${fileName}...`);
       let textContent = "";
 
       if (file.type === "application/pdf") {
@@ -83,7 +102,7 @@ export default function Home() {
 
       const chunks = chunkText(textContent);
       const totalChunks = chunks.length;
-      const batchSize = 15
+      const batchSize = 15;
 
       for (let i = 0; i < totalChunks; i += batchSize) {
         const batch = chunks.slice(i, i + batchSize);
@@ -114,8 +133,6 @@ export default function Home() {
     setSelectedFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
-
-  setSelectedFile;
 
   // Ask a question
   const handleSubmit = async (e) => {
@@ -160,150 +177,231 @@ export default function Home() {
     }
   };
 
+  const logo = () => {
+    if (msg.role === "ai") {
+      <img src={icon} height={20} width={20} />;
+    }
+  };
+
   return (
-    <div className="bg-gray-900 text-white min-h-screen flex flex-col font-sans">
-      <header className="bg-gray-800 p-4 border-b border-gray-700 shadow-lg">
-        <h1 className="text-2xl font-bold text-center text-cyan-400">
+    <Stack sx={{ bgcolor: "white", height: "46rem" }}>
+      <Container maxWidth="lg" sx={{ py: 3, bgcolor: "white" }}>
+        {/* Header */}
+        <Typography
+          variant="h4"
+          align="center"
+          sx={{ mb: 3, fontWeight: "bold", color: "#33A89D" }}
+        >
           Classory AI Assistant
-        </h1>
-      </header>
+        </Typography>
 
-      <main className="flex-1 flex flex-col md:flex-row p-4 gap-4 overflow-hidden">
-        {/* Teacher's Panel */}
-        <div className="md:w-1/3 bg-gray-800 rounded-lg p-6 flex flex-col border border-gray-700 shadow-md">
-          <h2 className="text-xl font-semibold mb-4 text-cyan-400 border-b border-cyan-700 pb-2">
-            Teacher&apos;s Panel
-          </h2>
-          <p className="text-gray-400 mb-6 text-sm">
-            Upload .txt or .pdf files for the AI to learn from.
-          </p>
+        <Box
+          display="flex"
+          flexDirection={{ xs: "column", md: "row" }}
+          gap={3}
+          sx={{ height: "38rem" }}
+        >
+          {/* Teacher Panel */}
+          <Paper
+            elevation={3}
+            sx={{ p: 3, flex: 1, minWidth: "300px", border: "1px solid #ccc" }}
+          >
+            <Typography
+              variant="h6"
+              sx={{
+                mb: 2,
+                bgcolor: "#33A89D",
+                fontWeight: "bold",
+                color: "white",
+                textAlign: "center",
+                borderRadius: 2,
+                height: "32px",
+                width: "10rem",
+                ml: "4.5rem",
+              }}
+            >
+              Teacher&apos;s Panel
+            </Typography>
+            <Typography variant="body2" sx={{ mb: 2, color: "gray" }}>
+              Upload .txt or .pdf files for the AI to learn from.
+            </Typography>
 
-          <div className="flex flex-col gap-3">
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              accept=".txt,.pdf"
-              multiple
-              className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-cyan-600 file:text-white hover:file:bg-cyan-700 transition-colors"
-            />
-            <button
-              onClick={handleFileUpload}
+            <Box display="flex" alignItems="center" gap={2} mb={2}>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept=".txt,.pdf"
+                multiple
+                id="upload-file"
+                style={{ display: "none" }}
+              />
+              <label htmlFor="upload-file">
+                <Button
+                  variant="contained"
+                  component="span"
+                  sx={{
+                    bgcolor: "#EE4B2B",
+                    "&:hover": { bgcolor: "#c53d22" },
+                  }}
+                >
+                  Choose Files
+                </Button>
+              </label>
+              <Typography variant="body2" sx={{ color: "gray" }}>
+                {selectedFile && selectedFile.length > 0
+                  ? selectedFile.map((f) => f.name).join(", ")
+                  : "No file chosen"}
+              </Typography>
+            </Box>
+
+            <Button
+              fullWidth
+              variant="contained"
+              sx={{
+                bgcolor: "#FAB18B",
+                "&:hover": { bgcolor: "#EE4B2B" },
+                mb: 2,
+              }}
               disabled={!selectedFile}
-              className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
+              onClick={handleFileUpload}
             >
               Upload Material
-            </button>
+            </Button>
+
             {uploadStatus && (
-              <p className="text-sm text-center text-gray-300 mt-1">
+              <Typography variant="body2" sx={{ mb: 1, color: "gray" }}>
                 {uploadStatus}
-              </p>
+              </Typography>
             )}
             {uploadProgress > 0 && (
-              <div className="w-full bg-gray-700 rounded-full h-2.5 mt-2">
-                <div
-                  className="bg-cyan-600 h-2.5 rounded-full"
-                  style={{ width: `${uploadProgress}%` }}
-                ></div>
-              </div>
+              <LinearProgress
+                variant="determinate"
+                value={uploadProgress}
+                sx={{
+                  height: 8,
+                  borderRadius: 2,
+                  bgcolor: "#eee",
+                  "& .MuiLinearProgress-bar": { bgcolor: "#FAB18B" },
+                }}
+              />
             )}
-          </div>
 
-          {/* File selector */}
-          <div className="mt-6">
-            <label className="block text-sm text-gray-300 mb-2">
+            {/* File Selector */}
+            <Typography variant="body2" sx={{ mt: 3, mb: 1 }}>
               Active file for questions
-            </label>
-            <select
+            </Typography>
+            <Select
+              fullWidth
               value={uploadedFileName}
               onChange={(e) => setUploadedFileName(e.target.value)}
-              className="w-full bg-gray-700 text-white rounded-md px-3 py-2"
             >
-              <option value="">
+              <MenuItem value="">
                 {uploadedFiles.length ? "Select a file…" : "No files yet"}
-              </option>
+              </MenuItem>
               {uploadedFiles.map((name, i) => (
-                <option key={`${name}::${i}`} value={name}>
+                <MenuItem key={`${name}::${i}`} value={name}>
                   {name}
-                </option>
+                </MenuItem>
               ))}
-            </select>
-            {uploadedFileName && (
-              <p className="text-xs text-gray-400 mt-1">
-                Using: {uploadedFileName}
-              </p>
-            )}
-          </div>
-        </div>
+            </Select>
+          </Paper>
 
-        {/* Student's Chatbot */}
-        <div className="flex-1 flex flex-col bg-gray-800 rounded-lg border border-gray-700 overflow-hidden shadow-md">
-          <div className="flex-1 p-6 overflow-y-auto space-y-4">
-            {messages.map((msg, idx) => (
-              <div
-                key={idx}
-                className={`flex ${
-                  msg.role === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
-                <div
-                  className={`max-w-xl lg:max-w-2xl px-4 py-2 rounded-2xl whitespace-pre-wrap ${
-                    msg.role === "user" ? "bg-cyan-600" : "bg-gray-700"
-                  }`}
-                >
-                  {msg.content}
-                </div>
-              </div>
-            ))}
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-gray-700 px-4 py-3 rounded-2xl flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse [animation-delay:-0.3s]" />
-                  <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse [animation-delay:-0.15s]" />
-                  <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
-                </div>
-              </div>
-            )}
-            <div ref={chatEndRef} />
-          </div>
+          {/* Student Chat */}
+          <Paper
+            elevation={3}
+            sx={{ flex: 2, display: "flex", flexDirection: "column", p: 2 }}
+          >
+            <Box flex={1} overflow="auto" mb={2}>
+              <List>
+                {messages.map((msg, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      display: "flex",
+                      justifyContent:
+                        msg.role === "user" ? "flex-end" : "flex-start",
+                      alignItems: "flex-start",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    {/* AI message with logo */}
+                    {msg.role === "ai" && (
+                      <div style={{ marginRight: "8px" }}>
+                        <img
+                          src={icon.src} // 👉 place your AI logo inside /public folder
+                          alt="AI"
+                          style={{
+                            width: "28px",
+                            height: "28px",
+                            borderRadius: "50%",
+                          }}
+                        />
+                      </div>
+                    )}
 
-          <div className="p-4 bg-gray-800 border-t border-gray-700">
-            <form onSubmit={handleSubmit} className="flex items-center gap-2">
-              <input
-                ref={inputRef}
-                type="text"
+                    <div
+                      style={{
+                        maxWidth: "70%",
+                        padding: "10px 14px",
+                        borderRadius: "16px",
+                        whiteSpace: "pre-wrap",
+                        backgroundColor:
+                          msg.role === "user" ? "#33A89D" : "#FAB18B",
+                        color: msg.role === "user" ? "#fff" : "#000",
+                      }}
+                    >
+                      {msg.content}
+                    </div>
+                  </div>
+                ))}
+
+                {isLoading && (
+                  <ListItem>
+                    <Typography sx={{ color: "gray" }}>Thinking...</Typography>
+                  </ListItem>
+                )}
+              </List>
+              <div ref={chatEndRef} />
+            </Box>
+
+            {/* Input */}
+            <Divider />
+            <Box
+              component="form"
+              onSubmit={handleSubmit}
+              display="flex"
+              gap={2}
+              mt={2}
+              sx={{ borderRadius: 10 }}
+            >
+              <TextField
+                fullWidth
+                inputRef={inputRef}
                 placeholder={
                   uploadedFileName
                     ? "Ask a question about the selected file…"
-                    : "Upload or select a file to ask questions…"
+                    : "Upload or select a file first…"
                 }
-                className="flex-1 bg-gray-700 rounded-full py-2 px-4 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                disabled={!uploadedFileName}
               />
-              <button
+              <Button
                 type="submit"
+                variant="contained"
+                sx={{
+                  bgcolor: "#33A89D",
+                  "&:hover": { bgcolor: "#2a867e" },
+                  height: 45,
+                  mt: 0.5,
+                }}
                 disabled={isLoading || !uploadedFileName}
-                className="bg-cyan-600 hover:bg-cyan-700 text-white p-2 rounded-full disabled:bg-gray-600 transition-colors"
-                title={!uploadedFileName ? "Select a file first" : "Send"}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 transform rotate-90"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                  />
-                </svg>
-              </button>
-            </form>
-          </div>
-        </div>
-      </main>
-    </div>
+                Send
+              </Button>
+            </Box>
+          </Paper>
+        </Box>
+      </Container>
+    </Stack>
   );
 }
