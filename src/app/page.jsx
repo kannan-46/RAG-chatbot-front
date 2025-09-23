@@ -23,7 +23,7 @@ import Image from "next/image";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:3001";
 
-const chunkText = (text, chunkSize = 1000, overlap = 50) => {
+const chunkText = (text, chunkSize = 2000, overlap = 150) => {
   const words = text.split(/\s+/);
   if (words.length <= chunkSize) return [text];
 
